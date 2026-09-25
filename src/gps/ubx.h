@@ -447,6 +447,21 @@ static const uint8_t _message_VALSET_DISABLE_SBAS_BBR[] = {0x00, 0x02, 0x00, 0x0
                                                            0x10, 0x00, 0x05, 0x00, 0x31, 0x10, 0x00};
 
 /*
+Nav-rate mode, used when NMEA is being broadcast to a chartplotter/autopilot.
+
+CFG-RATE-MEAS  30210001 U2  measurement period in ms. 333 ms (0x014d) == 3 Hz,
+                            which is the M10 ceiling for its default concurrent
+                            GPS+GAL+BDS B1I mix (datasheet table 2). Faster needs
+                            constellations dropped, which costs fix availability.
+CFG-PM-OPERATEMODE 20d00001 E1  0 == full power. Powersave caps the navigation
+                            rate, so it has to come off to hold 3 Hz.
+*/
+static const uint8_t _message_VALSET_RATE_3HZ_RAM[] = {0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x21, 0x30, 0x4d, 0x01};
+static const uint8_t _message_VALSET_RATE_3HZ_BBR[] = {0x00, 0x02, 0x00, 0x00, 0x01, 0x00, 0x21, 0x30, 0x4d, 0x01};
+static const uint8_t _message_VALSET_PM_FULLPOWER_RAM[] = {0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0xd0, 0x20, 0x00};
+static const uint8_t _message_VALSET_PM_FULLPOWER_BBR[] = {0x00, 0x02, 0x00, 0x00, 0x01, 0x00, 0xd0, 0x20, 0x00};
+
+/*
 Operational issues with the M10:
 
 PowerSave doesn't work with SBAS, seems like you can have SBAS enabled, but it will never lock

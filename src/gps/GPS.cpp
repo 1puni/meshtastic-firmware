@@ -6,6 +6,7 @@
 #include "Default.h"
 #include "GPS.h"
 #include "GpioLogic.h"
+#include "NMEABroadcast.h"
 #include "NodeDB.h"
 #include "PowerMon.h"
 #include "RTC.h"
@@ -787,6 +788,19 @@ bool GPS::setup()
             // Next enable wanted NMEA messages in RAM layer
             SEND_UBX_PACKET(0x06, 0x8A, _message_VALSET_ENABLE_NMEA_RAM, "enable messages for M10 GPS RAM", 500);
             delay(750);
+
+            // When we are feeding a chartplotter/autopilot over UDP, the receiver has to run
+            // continuously at nav rate. This deliberately overrides the powersave set above.
+            if (nmeaBroadcastEnabled()) {
+                SEND_UBX_PACKET(0x06, 0x8A, _message_VALSET_PM_FULLPOWER_RAM, "full power for NMEA broadcast RAM", 300);
+                delay(750);
+                SEND_UBX_PACKET(0x06, 0x8A, _message_VALSET_PM_FULLPOWER_BBR, "full power for NMEA broadcast BBR", 300);
+                delay(750);
+                SEND_UBX_PACKET(0x06, 0x8A, _message_VALSET_RATE_3HZ_RAM, "3Hz nav rate for NMEA broadcast RAM", 300);
+                delay(750);
+                SEND_UBX_PACKET(0x06, 0x8A, _message_VALSET_RATE_3HZ_BBR, "3Hz nav rate for NMEA broadcast BBR", 300);
+                delay(750);
+            }
 
             // As the M10 has no flash, the best we can do to preserve the config is to set it in RAM and BBR.
             // BBR will survive a restart, and power off for a while, but modules with small backup
@@ -1863,6 +1877,7 @@ bool GPS::whileActive()
         debugmsg += vformat("%c", (c >= 32 && c <= 126) ? c : '.');
 #endif
         isValid |= reader.encode(c);
+        nmeaBroadcastFeed((char)c);
         if (charsInBuf > sizeof(UBXscratch) - 10 || c == '\r') {
             if (strnstr((char *)UBXscratch, "$GPTXT,01,01,02,u-blox ag - www.u-blox.com*50", charsInBuf)) {
                 rebootsSeen++;
